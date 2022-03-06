@@ -2,11 +2,13 @@ package data
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -75,7 +77,11 @@ func Add(collection string, item interface{}) (id string, err error) {
 		return
 	}
 
-	id = fmt.Sprintf("%v", result.InsertedID)
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		id = oid.Hex()
+	} else {
+		err = errors.New("MongoDB did not return a valid id for this document")
+	}
 
 	return
 }
