@@ -15,6 +15,7 @@ func main() {
 
 	r.AddRoute(http.MethodGet, "/polls", polls.GetAll)
 	r.AddRoute(http.MethodPost, "/polls", polls.AddPoll)
+	r.AddRoute(http.MethodGet, "/polls/:id", polls.GetById)
 
 	err := http.ListenAndServe(":"+port, r)
 	if err != nil {

@@ -11,8 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/nolwn/quick-poll/resources"
 )
 
 const dbName = "quickpoll"
@@ -37,7 +35,7 @@ var d = data{
 }
 
 func Query(
-	collection string, parameters resources.AddPoll,
+	collection string, parameters interface{},
 ) (results []bson.M, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
@@ -49,13 +47,29 @@ func Query(
 
 	client.Database(dbName).Collection(collection)
 
-	cursor, err := client.Database(dbName).Collection(collection).Find(ctx, bson.M{})
+	cursor, err := client.Database(dbName).Collection(collection).Find(ctx, parameters)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
 	err = cursor.All(ctx, &results)
+
+	return
+}
+
+func QueryById(collection string, id string) (entity interface{}, err error) {
+	var oid primitive.ObjectID
+
+	oid, err = primitive.ObjectIDFromHex(id)
+	parameters := bson.D{{Key: "_id", Value: oid}}
+
+	if err != nil {
+		return nil, err
+	}
+
+	entities, err := Query(collection, parameters)
+	entity = entities[0]
 
 	return
 }

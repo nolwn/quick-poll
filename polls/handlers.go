@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/nolwn/go-router"
 	"github.com/nolwn/quick-poll/data"
 	"github.com/nolwn/quick-poll/resources"
 )
@@ -25,6 +26,35 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "application/json")
+	w.Write(b)
+}
+
+func GetById(w http.ResponseWriter, r *http.Request) {
+	params := router.PathParams(r)
+
+	poll, err := data.QueryById("polls", params["id"])
+
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(500)
+		return
+	}
+
+	if poll == nil {
+		w.WriteHeader(404)
+		return
+	}
+
+	b, err := json.Marshal(poll)
+
+	if err != nil {
+		fmt.Printf("Could not marshall poll: %s\n", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(200)
 	w.Write(b)
 }
 
@@ -64,7 +94,3 @@ func AddPoll(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(201)
 	w.Write(res)
 }
-
-// func GetById(w http.ResponseWriter, r *http.Request) {
-
-// }
