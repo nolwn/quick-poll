@@ -1,9 +1,8 @@
-package data
+package main
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"time"
 
@@ -19,6 +18,7 @@ const dbTimeout = 5 * time.Second
 // Tables
 const (
 	TablePoll = "polls"
+	TableVote = "votes"
 )
 
 // const dbUriEnvVar = "MONGO_DB_URI"
@@ -34,7 +34,7 @@ var d = data{
 	tables: make(map[string][]interface{}),
 }
 
-func Query(
+func query(
 	collection string, parameters interface{},
 ) (results []bson.M, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
@@ -55,10 +55,14 @@ func Query(
 
 	err = cursor.All(ctx, &results)
 
-	return
+	if results == nil {
+		results = []bson.M{}
+	}
+
+	return renameIds(results), nil
 }
 
-func QueryById(collection string, id string) (entity interface{}, err error) {
+func queryById(collection string, id string) (entity primitive.M, err error) {
 	var oid primitive.ObjectID
 
 	oid, err = primitive.ObjectIDFromHex(id)
@@ -68,17 +72,19 @@ func QueryById(collection string, id string) (entity interface{}, err error) {
 		return nil, err
 	}
 
-	entities, err := Query(collection, parameters)
-	entity = entities[0]
+	entities, err := query(collection, parameters)
+
+	if len(entities) > 0 {
+		entity = entities[0]
+		return
+	}
 
 	return
 }
 
-func Add(collection string, item interface{}) (id string, err error) {
+func add(collection string, item interface{}) (id string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
-
-	fmt.Printf("%v\n", item)
 
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
@@ -98,4 +104,38 @@ func Add(collection string, item interface{}) (id string, err error) {
 	}
 
 	return
+}
+
+func update(collection string, id string, item idable) (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, opts)
+	if err != nil {
+		return
+	}
+
+	var oid primitive.ObjectID
+	oid, err = primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return
+	}
+
+	itemId := item.id()
+	item.setId("")
+
+	_, err = client.Database(dbName).Collection(collection).ReplaceOne(ctx, bson.D{{Key: "_id", Value: oid}}, item)
+
+	item.setId(itemId)
+
+	return
+}
+
+func renameIds(entities []primitive.M) []primitive.M {
+	for _, entity := range entities {
+		entity["id"] = entity["_id"]
+		delete(entity, "_id")
+	}
+
+	return entities
 }

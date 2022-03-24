@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/nolwn/go-router"
-	"github.com/nolwn/quick-poll/polls"
 )
 
 func main() {
@@ -13,9 +12,12 @@ func main() {
 
 	r := router.Router{}
 
-	r.AddRoute(http.MethodGet, "/polls", polls.GetAll)
-	r.AddRoute(http.MethodPost, "/polls", polls.AddPoll)
-	r.AddRoute(http.MethodGet, "/polls/:id", polls.GetById)
+	r.AddRoute(http.MethodGet, "/polls", getAll)
+	r.AddRoute(http.MethodPost, "/polls", addPoll)
+
+	r.AddRoute(http.MethodGet, "/polls/:id", getById)
+
+	r.AddRoute(http.MethodPost, "/polls/:id/votes", addVote)
 
 	err := http.ListenAndServe(":"+port, r)
 	if err != nil {
