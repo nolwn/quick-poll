@@ -8,19 +8,23 @@ import (
 )
 
 func main() {
+
+	// TODO: this should be pulled of the environment
 	port := "3000"
 
 	r := router.Router{}
 
-	r.AddRoute(http.MethodGet, "/polls", getAll)
+	// poll endpoints
+	r.AddRoute(http.MethodGet, "/polls", getAllPolls)
 	r.AddRoute(http.MethodPost, "/polls", addPoll)
 
-	r.AddRoute(http.MethodGet, "/polls/:id", getById)
+	// poll by id endpoints
+	r.AddRoute(http.MethodGet, "/polls/:id", getPollById)
 
+	// vote endpoints
 	r.AddRoute(http.MethodPost, "/polls/:id/votes", addVote)
 
-	err := http.ListenAndServe(":"+port, r)
-	if err != nil {
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)
 	}
 }
